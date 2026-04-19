@@ -883,11 +883,28 @@ const PROJECTS = [
   {ref:"R-12", span:"full", category:"Incident critique", accent:true, page:"r12.html",
     title:"Incident 802.1X / RADIUS — MADIACOM",
     lede:"Rupture PKI (CA expiré) causant l'échec des authentifications WiFi sur 4 APs Meraki. Service rétabli en 1 journée.",
-    tech:["PKI","802.1X","RADIUS","Meraki","EAP-TLS"],
-    context:"Digicel FWI · MADIACOM", duration:"1 journée", scope:"4 APs Meraki",
-    problem:"Toutes les authentifications WiFi 802.1X échouaient simultanément : impossible de se connecter.",
-    actions:["Analyse des logs RADIUS (NPS)","Inspection du certificat serveur RADIUS → CA racine expirée","Génération d'une nouvelle CA et certificat serveur","Redéploiement de la CA racine via GPO","Reconfiguration du profil EAP-TLS sur les APs Meraki","Tests de bout en bout"],
-    result:"Service WiFi rétabli en une journée, post-mortem rédigé, plan de surveillance PKI mis en place."
+    tech:["802.1X","RADIUS","EAP-PEAP","PKI","Certificats","NPS","Cisco Meraki","Windows Server","certutil","certsrv"],
+    context:"Digicel FWI · Client MADIACOM", duration:"1 journée", scope:"4 APs Meraki",
+    problem:"Intervention urgente chez MADIACOM (Guadeloupe et Martinique). Échec total des authentifications WiFi 802.1X sur 4 access points Meraki — taux de succès RADIUS à 0%. Environnement : Cisco Meraki + NPS Windows Server 2019 + PKI Active Directory. Cause racine : certificat CA racine expiré, rupture complète de la chaîne de confiance EAP-PEAP.",
+    actions:[
+      "Détection de l'alerte 802.1X failure sur le dashboard Meraki (AP gp-madiacom-ap01, 10h15) — 96% Radius login failure, 4% EAPoL timeout",
+      "Test de connectivité RADIUS depuis Meraki : 5/5 APs joignent le serveur RADIUS — problème applicatif confirmé, pas réseau",
+      "Analyse des codes d'erreur : 96% Radius login failure, 4% EAPoL timeout — confirmation d'un problème d'authentification côté serveur",
+      "Connexion RDP sur le serveur RADIUS → Event Viewer → Event ID 6273, Reason Code 262 : certificat CA expiré — cause racine identifiée",
+      "Localisation de l'autorité de certification via certutil -config - -ping → VMADPRODC01.MADIACOM.local",
+      "Renouvellement du certificat CA via certsrv.msc avec conservation de la clé privée existante",
+      "Publication du nouveau certificat CA dans Active Directory : certutil -dspublish -f ... RootCA",
+      "Mise à jour de la GPO NPS : gpupdate /force, renouvellement du certificat NPS via certlm.msc",
+      "Redémarrage du service NPS : net stop ias puis net start ias",
+      "Déploiement d'un SSID temporaire WPA2-PSK (MADIACOM-TEMP) pour permettre l'exécution de gpupdate sur les postes clients",
+      "Vérification sur le dashboard Meraki : statut passe de Bad à Good, DHCP 100%, DNS 100% — authentifications 802.1X rétablies"
+    ],
+    result:"Service WiFi rétabli en 1 journée. 4/4 access points Meraki opérationnels. Post-mortem rédigé, plan de surveillance PKI mis en place.",
+    competences:[
+      {titre:"Exploiter / dépanner", detail:"Diagnostic via dashboard Meraki, Event Viewer NPS, analyse des codes erreur RADIUS (Event ID 6273, Reason Code 262)"},
+      {titre:"Sécuriser l'infrastructure", detail:"Renouvellement CA PKI, publication dans Active Directory, mise à jour certificat NPS et service RADIUS"},
+      {titre:"Répondre aux incidents", detail:"Intervention client urgente, résolution complète en 1 journée avec rétablissement des 4 APs Meraki"}
+    ]
   }
 ];
 
@@ -964,6 +981,22 @@ function openDrawer(index){
         '</a>' +
       '</div>' +
     '</div>' +
+    (p.competences ? (
+      '<h4>Compétences mises en œuvre</h4>' +
+      '<div style="border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:8px;">' +
+      '<table style="width:100%;border-collapse:collapse;font-size:14px;">' +
+      '<thead><tr style="border-bottom:1px solid var(--line);">' +
+        '<th style="text-align:left;padding:12px 16px;font-family:\'Geist Mono\',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);font-weight:500;">Compétence</th>' +
+        '<th style="text-align:left;padding:12px 16px;font-family:\'Geist Mono\',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);font-weight:500;">Application concrète</th>' +
+      '</tr></thead><tbody>' +
+      p.competences.map(function(c, ci){
+        return '<tr style="' + (ci < p.competences.length-1 ? 'border-bottom:1px solid var(--line);' : '') + '">' +
+          '<td style="padding:12px 16px;font-weight:500;color:var(--ink);vertical-align:top;white-space:nowrap;">' + c.titre + '</td>' +
+          '<td style="padding:12px 16px;color:var(--ink-soft);vertical-align:top;">' + c.detail + '</td>' +
+        '</tr>';
+      }).join('') +
+      '</tbody></table></div>'
+    ) : '') +
     '<h4>Technologies</h4>' +
     '<div class="skills-cloud">' + p.tech.map(function(t){ return '<span class="skill-pill">' + t + '</span>'; }).join('') + '</div>';
 
