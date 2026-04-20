@@ -614,6 +614,7 @@
   <a href="#about" data-nav="about"><span class="label">À propos</span><span class="bullet"></span></a>
   <a href="#education" data-nav="education"><span class="label">Formation</span><span class="bullet"></span></a>
   <a href="#projects" data-nav="projects"><span class="label">Réalisations</span><span class="bullet"></span></a>
+  <a href="#e6" data-nav="e6"><span class="label">E6 · CFA</span><span class="bullet"></span></a>
   <a href="#contact" data-nav="contact"><span class="label">Contact</span><span class="bullet"></span></a>
 </nav>
 
@@ -719,6 +720,12 @@
     <div class="eyebrow">Réalisations &middot; 12</div>
     <h2>Douze missions,<br>du <span class="italic">déploiement</span> à la <span class="italic">résolution d'incident</span>.</h2>
     <div class="projects-grid" id="projectsGrid"></div>
+  </section>
+
+  <section id="e6">
+    <div class="eyebrow">E6 &middot; BTS SIO SISR &middot; Réalisations CFA</div>
+    <h2>Deux missions <span class="italic">académiques</span>,<br>infrastructure en conditions réelles.</h2>
+    <div class="projects-grid" id="e6Grid"></div>
   </section>
 
   <section id="contact">
@@ -997,6 +1004,136 @@ function openDrawer(index){
       }).join('') +
       '</tbody></table></div>'
     ) : '') +
+    '<h4>Technologies</h4>' +
+    '<div class="skills-cloud">' + p.tech.map(function(t){ return '<span class="skill-pill">' + t + '</span>'; }).join('') + '</div>';
+
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('drawerScrim').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+const E6_PROJECTS = [
+  {ref:"E6-M1", span:"half", category:"Serveurs & Services", gradient:["#4a6b4a","#e9b778"], page:"e6-mission1-serveurs.html",
+    title:"Déploiement infrastructure serveurs M2L",
+    lede:"Active Directory, DHCP, IIS et FTP sous Hyper-V Windows Server 2022 — 54 captures documentées.",
+    tech:["Active Directory","DHCP","IIS","FTP","Hyper-V","Windows Server 2022"],
+    context:"CFA CCI Martinique · Mission 1", duration:"3 semaines", scope:"2 serveurs / 4 rôles",
+    problem:"L'organisation M2L avait besoin d'une infrastructure centralisée multi-services : gestion des identités (AD), distribution IP (DHCP), hébergement intranet (IIS) et partage de fichiers (FTP), le tout sur un environnement virtualisé Hyper-V.",
+    actions:[
+      "Création de 2 VMs sous Hyper-V (Serveur LAN et Serveur DMZ)",
+      "Déploiement AD DS : création du domaine m2lgroupekv.local, promotion en contrôleur de domaine",
+      "Configuration DHCP : étendue Ligues M2L (172.21.0.10–172.21.0.50), option DNS et routeur",
+      "Installation IIS : site web intranet accessible depuis les postes clients",
+      "Configuration FTP (M2L_FTProot) sur 10.61.0.1:21, authentification Basic, test de transfert avec test.txt",
+      "Validation : DHCP étendue active, domaine AD opérationnel, IIS et FTP testés"
+    ],
+    result:"Infrastructure complète opérationnelle : AD, DHCP, IIS et FTP fonctionnels. 54 captures documentent toutes les étapes d'installation et de validation.",
+    competences:[
+      {titre:"Installer & déployer", detail:"Déploiement complet AD DS, DHCP, IIS, FTP sur Hyper-V Windows Server 2022"},
+      {titre:"Tester & valider", detail:"Tests de connectivité DHCP, accès IIS depuis client, transfert FTP avec fichier de test"},
+      {titre:"Documenter", detail:"54 captures d'écran couvrant toutes les étapes — installation, configuration, résultats"}
+    ]
+  },
+  {ref:"E6-M3", span:"half", category:"Réseau & Commutation", gradient:["#c2491f","#4a6b4a"], page:"e6-mission3-vlan.html",
+    title:"Commutation & Routage inter-VLAN Cisco",
+    lede:"Segmentation réseau en VLANs et routage inter-VLAN via SVI sur Catalyst 3750, 2960 et routeur 2800.",
+    tech:["Cisco IOS","VLANs","SVI","NAT/PAT","Catalyst 3750","Catalyst 2960","Cisco 2800"],
+    context:"CFA CCI Martinique · Mission 3", duration:"2 semaines", scope:"3 équipements Cisco",
+    problem:"Le réseau CFA était à plat (un seul domaine de broadcast). Il fallait segmenter le trafic par type d'utilisateur (étudiants, personnel, gestion) tout en maintenant les communications inter-services et l'accès Internet.",
+    actions:[
+      "Définition du plan d'adressage : VLAN 10 Étudiants (192.168.10.0/24), VLAN 20 Personnel (192.168.20.0/24), VLAN 99 Gestion (192.168.99.0/24)",
+      "Configuration Catalyst 2960 : création VLANs, ports access par VLAN, trunk vers le 3750",
+      "Configuration Catalyst 3750 : interfaces SVI par VLAN, activation du routage IP (ip routing), trunk vers 2960",
+      "Configuration Routeur 2800 : route par défaut, NAT overload (PAT) sur interface WAN, ACL sortante",
+      "Tests : ping inter-VLAN, accès Internet, vérification show ip route et show vlan brief"
+    ],
+    result:"Segmentation L2 effective. Routage inter-VLAN opérationnel via SVI. NAT fonctionnel. Tous les tests de connectivité concluants.",
+    competences:[
+      {titre:"Concevoir", detail:"Plan d'adressage VLAN, schéma logique de la topologie réseau"},
+      {titre:"Installer & configurer", detail:"Configuration CLI IOS sur 3 équipements Cisco réels (switches + routeur)"},
+      {titre:"Tester & valider", detail:"Tests ping inter-VLAN, vérification tables de routage, test accès Internet via NAT"}
+    ]
+  }
+];
+
+(function renderE6Grid(){
+  const grid = document.getElementById('e6Grid');
+  E6_PROJECTS.forEach(function(p, i){
+    const spanClass = p.span === 'wide' ? 'wide' : p.span === 'narrow' ? 'narrow' : p.span === 'full' ? 'full' : '';
+    const card = document.createElement('div');
+    card.className = 'glass project-card ' + spanClass;
+    card.dataset.e6index = i;
+    const grad = 'background: radial-gradient(circle at 70% 30%, ' + p.gradient[0] + ', ' + p.gradient[1] + ' 70%);';
+    card.innerHTML =
+      '<div class="blob-bg" style="' + grad + '"></div>' +
+      '<div class="content">' +
+        '<div>' +
+          '<div class="tag"><span class="ref">' + p.ref + '</span>' + p.category + '</div>' +
+          '<h3>' + p.title + '</h3>' +
+          '<div class="desc">' + p.lede + '</div>' +
+        '</div>' +
+        '<div class="foot">' +
+          '<div class="doc-badge"><span class="dot"></span>Voir la documentation</div>' +
+          '<div class="arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H9M17 7v8"/></svg></div>' +
+        '</div>' +
+      '</div>';
+    card.addEventListener('click', function(){ openE6Drawer(i); });
+    grid.appendChild(card);
+  });
+})();
+
+function openE6Drawer(index){
+  const p = E6_PROJECTS[index];
+  const body = document.getElementById('drawerBody');
+  document.getElementById('drawerRef').textContent = p.ref + ' · ' + p.category;
+  const grad = 'radial-gradient(circle at 70% 30%, ' + p.gradient[0] + ', ' + p.gradient[1] + ' 70%)';
+  body.innerHTML =
+    '<div class="drawer-hero" style="background:' + grad + '">' +
+      '<div style="position:absolute;inset:0;background-image:repeating-linear-gradient(-15deg,transparent 0 30px,rgba(255,255,255,0.08) 30px 32px);mix-blend-mode:overlay;"></div>' +
+      '<div style="position:absolute;bottom:20px;left:24px;font-family:\'Geist Mono\',monospace;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:white;">' + p.ref + ' · E6 BTS SIO SISR</div>' +
+    '</div>' +
+    '<div class="eyebrow">' + p.category + '</div>' +
+    '<h2>' + p.title + '</h2>' +
+    '<p>' + p.lede + '</p>' +
+    '<div class="drawer-meta">' +
+      '<div><div class="k">Contexte</div><div class="v">' + p.context + '</div></div>' +
+      '<div><div class="k">Durée</div><div class="v">' + p.duration + '</div></div>' +
+      '<div><div class="k">Périmètre</div><div class="v">' + p.scope + '</div></div>' +
+    '</div>' +
+    '<h4>Contexte &amp; Problématique</h4>' +
+    '<p>' + p.problem + '</p>' +
+    '<h4>Démarche &amp; Actions</h4>' +
+    '<ul>' + p.actions.map(function(a){ return '<li>' + a + '</li>'; }).join('') + '</ul>' +
+    '<h4>Résultat</h4>' +
+    '<p>' + p.result + '</p>' +
+    '<h4>Documentation <span class="count">1</span></h4>' +
+    '<div class="docs-wrap">' +
+      '<div class="docs-intro">Page de documentation détaillée pour cette réalisation.</div>' +
+      '<div class="docs-list">' +
+        '<a class="doc-item" href="' + p.page + '" target="_blank" rel="noopener">' +
+          '<div class="doc-icon link">WEB</div>' +
+          '<div class="doc-meta">' +
+            '<div class="doc-title">Documentation complète ' + p.ref + '</div>' +
+            '<div class="doc-sub">Page portfolio · ' + p.category + '</div>' +
+          '</div>' +
+          '<div class="doc-arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H9M17 7v8"/></svg></div>' +
+        '</a>' +
+      '</div>' +
+    '</div>' +
+    '<h4>Compétences mises en œuvre</h4>' +
+    '<div style="border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:8px;">' +
+    '<table style="width:100%;border-collapse:collapse;font-size:14px;">' +
+    '<thead><tr style="border-bottom:1px solid var(--line);">' +
+      '<th style="text-align:left;padding:12px 16px;font-family:\'Geist Mono\',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);font-weight:500;">Compétence</th>' +
+      '<th style="text-align:left;padding:12px 16px;font-family:\'Geist Mono\',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);font-weight:500;">Application concrète</th>' +
+    '</tr></thead><tbody>' +
+    p.competences.map(function(c, ci){
+      return '<tr style="' + (ci < p.competences.length-1 ? 'border-bottom:1px solid var(--line);' : '') + '">' +
+        '<td style="padding:12px 16px;font-weight:500;color:var(--ink);vertical-align:top;white-space:nowrap;">' + c.titre + '</td>' +
+        '<td style="padding:12px 16px;color:var(--ink-soft);vertical-align:top;">' + c.detail + '</td>' +
+      '</tr>';
+    }).join('') +
+    '</tbody></table></div>' +
     '<h4>Technologies</h4>' +
     '<div class="skills-cloud">' + p.tech.map(function(t){ return '<span class="skill-pill">' + t + '</span>'; }).join('') + '</div>';
 
