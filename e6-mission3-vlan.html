@@ -230,6 +230,26 @@
   footer p { font-family: 'Geist Mono', monospace; font-size: 12px; letter-spacing: 0.06em; color: var(--muted); }
   footer a { color: var(--coral); text-decoration: none; }
 
+  /* Productions & documentation */
+  .doc-list { list-style: none; padding: 0; margin: 28px 0 0; display: flex; flex-direction: column; gap: 0; }
+  .doc-list li { border-bottom: 1px solid var(--line); }
+  .doc-list li:first-child { border-top: 1px solid var(--line); }
+  .doc-list a {
+    display: flex; align-items: baseline; gap: 20px;
+    padding: 18px 4px; text-decoration: none;
+    color: var(--ink); transition: color 0.2s;
+  }
+  .doc-list a:hover { color: var(--coral); }
+  .doc-list a:hover .doc-arrow { color: var(--coral); }
+  .doc-label {
+    font-weight: 500; font-size: 16px; flex: 1;
+  }
+  .doc-desc {
+    font-family: 'Geist Mono', monospace; font-size: 12px;
+    color: var(--muted); letter-spacing: 0.05em;
+  }
+  .doc-arrow { font-size: 14px; color: var(--muted); transition: color 0.2s; }
+
   /* Lightbox */
   .lb {
     display: none; position: fixed; inset: 0; z-index: 9000;
@@ -291,6 +311,7 @@
   <a href="#cisco2960">Cisco 2960</a>
   <a href="#tests">Tests</a>
   <a href="#bilan">Bilan</a>
+  <a href="#productions">Productions</a>
 </nav>
 
 <div class="page-wrap">
@@ -527,6 +548,74 @@
       <span class="skill-pill">show ip route</span>
       <span class="skill-pill">MobaXterm (console série)</span>
     </div>
+  </section>
+
+
+  <!-- Productions & documentation -->
+  <section id="productions">
+    <div class="section-header">
+      <div class="eyebrow">Livrables Mission 3</div>
+      <h2>Productions &amp; <span class="italic">documentation</span></h2>
+      <p>Ensemble des fichiers produits lors de la mission — schéma, simulation, scripts IOS, procédures et justifications techniques.</p>
+    </div>
+    <ul class="doc-list">
+      <li>
+        <a href="docs/mission3/schema_reseau_m2l.png" download>
+          <span class="doc-label">Schéma réseau</span>
+          <span class="doc-desc">Visio / image — infrastructure M2L complète</span>
+          <span class="doc-arrow">↓</span>
+        </a>
+      </li>
+      <li>
+        <a href="docs/mission3/m2l_infrastructure.pkt" download>
+          <span class="doc-label">Fichier Packet Tracer</span>
+          <span class="doc-desc">.pkt — Cisco 3750 + 2960 + 2800 + VLANs + NAT</span>
+          <span class="doc-arrow">↓</span>
+        </a>
+      </li>
+      <li>
+        <a href="docs/mission3/config_3750.txt" download>
+          <span class="doc-label">Script config_3750.txt</span>
+          <span class="doc-desc">Configuration complète du switch L3</span>
+          <span class="doc-arrow">↓</span>
+        </a>
+      </li>
+      <li>
+        <a href="docs/mission3/config_2960.txt" download>
+          <span class="doc-label">Script config_2960.txt</span>
+          <span class="doc-desc">Configuration complète du switch L2</span>
+          <span class="doc-arrow">↓</span>
+        </a>
+      </li>
+      <li>
+        <a href="docs/mission3/config_2800.txt" download>
+          <span class="doc-label">Script config_2800.txt</span>
+          <span class="doc-desc">Configuration NAT / routage du routeur</span>
+          <span class="doc-arrow">↓</span>
+        </a>
+      </li>
+      <li>
+        <a href="docs/mission3/procedures_tests_mission3.pdf" download>
+          <span class="doc-label">Procédures de tests</span>
+          <span class="doc-desc">Tableau des 12 tests avec résultats (PDF)</span>
+          <span class="doc-arrow">↓</span>
+        </a>
+      </li>
+      <li>
+        <a href="docs/mission3/justification_choix_techniques.pdf" download>
+          <span class="doc-label">Justification des choix techniques</span>
+          <span class="doc-desc">Choix d'architecture — SVI vs router-on-a-stick, NAT, trunk</span>
+          <span class="doc-arrow">↓</span>
+        </a>
+      </li>
+      <li>
+        <a href="docs/mission3/planification_sp1_sp2.pdf" download>
+          <span class="doc-label">Planification des tâches</span>
+          <span class="doc-desc">Ordonnancement SP1 → SP2 (PDF)</span>
+          <span class="doc-arrow">↓</span>
+        </a>
+      </li>
+    </ul>
   </section>
 
 </div>
