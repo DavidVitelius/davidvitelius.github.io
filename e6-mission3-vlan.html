@@ -1,0 +1,603 @@
+<!doctype html>
+<html lang="fr" data-palette="earth">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>E6 — Mission 3 : Commutation &amp; Routage inter-VLAN | Kaël Vitelius</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --cream: #efe7da; --cream-2: #f7f0e3;
+    --ink: #1f1c16; --ink-soft: #433d31; --muted: #7a7060;
+    --line: rgba(31,28,22,0.14);
+    --glass: rgba(255, 250, 240, 0.5);
+    --glass-stroke: rgba(255,255,255,0.7);
+    --peach: #e9b778; --coral: #c2491f; --terracotta: #4a6b4a; --rose: #d89a6a;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Geist', sans-serif;
+    color: var(--ink);
+    background: var(--cream);
+    overflow-x: hidden;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    line-height: 1.6;
+    font-size: 17px;
+  }
+
+  .bg-stage {
+    position: fixed; inset: 0;
+    z-index: 0; pointer-events: none;
+    overflow: hidden;
+    filter: blur(60px) saturate(1.1);
+  }
+  .bg-stage svg { position: absolute; width: 70vw; height: 70vw; opacity: 0.85; }
+  .bg-a { top: -20vw; left: -15vw; color: var(--peach); }
+  .bg-b { top: 30vh; right: -25vw; color: var(--coral); opacity: 0.75 !important; }
+  .bg-c { bottom: -30vw; left: 10vw; color: var(--rose); opacity: 0.6 !important; }
+  .bg-d { top: 120vh; right: 5vw; color: var(--terracotta); opacity: 0.5 !important; }
+  .bg-e { top: 220vh; left: -10vw; color: var(--peach); opacity: 0.7 !important; }
+
+  .grain {
+    position: fixed; inset: 0;
+    z-index: 100; pointer-events: none;
+    opacity: 0.22; mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.2  0 0 0 0 0.1  0 0 0 0 0.05  0 0 0 0.5 0'/></filter><rect width='200' height='200' filter='url(%23n)'/></svg>");
+  }
+
+  .glass {
+    background: var(--glass);
+    backdrop-filter: blur(20px) saturate(1.4);
+    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    border: 1px solid var(--glass-stroke);
+    border-radius: 24px;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.8) inset, 0 24px 60px -30px rgba(194, 73, 31, 0.2);
+  }
+
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 22px clamp(20px, 5vw, 60px);
+    font-family: 'Geist Mono', monospace;
+    font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .topbar .mark { font-weight: 500; color: var(--ink); }
+  .topbar a { color: var(--muted); text-decoration: none; transition: color 0.2s; }
+  .topbar a:hover { color: var(--coral); }
+
+  .section-nav {
+    position: sticky; top: 0; z-index: 40;
+    background: rgba(239,231,218,0.85);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--line);
+    display: flex; gap: 0; overflow-x: auto;
+    padding: 0 clamp(20px, 5vw, 60px);
+  }
+  .section-nav a {
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--muted); text-decoration: none;
+    padding: 16px 20px; border-bottom: 2px solid transparent;
+    white-space: nowrap; transition: all 0.2s;
+  }
+  .section-nav a:hover, .section-nav a.active { color: var(--coral); border-bottom-color: var(--coral); }
+
+  .page-wrap {
+    position: relative; z-index: 1;
+    max-width: 1100px;
+    padding: 0 clamp(20px, 5vw, 60px);
+    margin: 0 auto;
+  }
+
+  section { padding: 80px 0; scroll-margin-top: 80px; }
+
+  .eyebrow {
+    font-family: 'Geist Mono', monospace;
+    font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--terracotta);
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 20px;
+  }
+  .eyebrow::before { content: ''; width: 28px; height: 1px; background: var(--terracotta); }
+
+  h1, h2, h3 {
+    font-family: 'Instrument Serif', serif;
+    font-weight: 400; line-height: 1.1;
+    letter-spacing: -0.02em; margin: 0;
+  }
+  .italic { font-style: italic; color: var(--coral); }
+
+  #hero { padding-top: 130px; padding-bottom: 60px; }
+  #hero h1 { font-size: clamp(44px, 8vw, 100px); margin-bottom: 24px; }
+  #hero .sub {
+    font-size: 18px; color: var(--ink-soft);
+    max-width: 640px; margin-bottom: 40px; line-height: 1.7;
+  }
+  .hero-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+  .hero-tag {
+    padding: 8px 16px; border-radius: 999px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 12px; letter-spacing: 0.08em;
+    background: var(--glass); border: 1px solid var(--glass-stroke);
+    color: var(--ink-soft);
+  }
+
+  .section-header { margin-bottom: 36px; }
+  .section-header h2 { font-size: clamp(36px, 5vw, 60px); }
+  .section-header p {
+    font-size: 17px; color: var(--ink-soft); margin-top: 16px;
+    max-width: 680px; line-height: 1.7;
+  }
+
+  /* Context grid */
+  .context-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 32px; }
+  @media (max-width: 700px) { .context-grid { grid-template-columns: 1fr; } }
+  .ctx-card { padding: 28px 32px; border-radius: 24px; }
+  .ctx-card h3 {
+    font-family: 'Geist', sans-serif;
+    font-size: 13px; font-weight: 600;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 12px;
+  }
+  .ctx-card p, .ctx-card li { font-size: 16px; color: var(--ink-soft); line-height: 1.7; }
+  .ctx-card ul { padding-left: 18px; }
+  .ctx-card li { margin-bottom: 6px; }
+
+  /* Topology table */
+  .topo-table {
+    width: 100%; border-collapse: collapse; font-size: 15px;
+  }
+  .topo-table th {
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--muted); text-align: left;
+    padding: 10px 16px; border-bottom: 1px solid var(--line); font-weight: 500;
+  }
+  .topo-table td {
+    padding: 14px 16px; border-bottom: 1px solid var(--line); color: var(--ink-soft);
+  }
+  .topo-table td:first-child { color: var(--ink); font-weight: 500; }
+  .topo-table .vlan-badge {
+    display: inline-block;
+    font-family: 'Geist Mono', monospace; font-size: 12px;
+    padding: 2px 10px; border-radius: 999px;
+    background: rgba(194,73,31,0.1); color: var(--coral);
+    border: 1px solid rgba(194,73,31,0.2);
+  }
+  .topo-table tr:last-child td { border-bottom: none; }
+
+  /* Image gallery */
+  .fig-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px; margin-top: 24px;
+  }
+  .fig-grid.two-col { grid-template-columns: 1fr 1fr; }
+  @media (max-width: 600px) { .fig-grid.two-col { grid-template-columns: 1fr; } }
+
+  .fig-card {
+    border-radius: 20px; overflow: hidden; cursor: pointer;
+    transition: transform 0.35s cubic-bezier(0.2,0.8,0.2,1), box-shadow 0.35s;
+  }
+  .fig-card:hover { transform: translateY(-4px); box-shadow: 0 20px 60px -20px rgba(194,73,31,0.35); }
+  .fig-card img { width: 100%; aspect-ratio: 16/10; object-fit: cover; display: block; }
+  .fig-card.tall img { aspect-ratio: 4/3; }
+  .fig-caption {
+    padding: 12px 16px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px; letter-spacing: 0.05em; color: var(--muted);
+    background: var(--glass); backdrop-filter: blur(12px);
+    border-top: 1px solid var(--line);
+  }
+  .fig-num {
+    display: inline-block;
+    background: var(--coral); color: white;
+    font-size: 10px; padding: 2px 7px; border-radius: 999px;
+    margin-right: 6px; letter-spacing: 0.1em;
+  }
+
+  /* Bilan */
+  .bilan-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-top: 32px; }
+  @media (max-width: 800px) { .bilan-grid { grid-template-columns: 1fr; } }
+  .bilan-card { padding: 28px; border-radius: 24px; }
+  .bilan-icon { font-size: 32px; margin-bottom: 12px; }
+  .bilan-card h3 { font-family: 'Geist', sans-serif; font-size: 16px; font-weight: 600; margin-bottom: 10px; }
+  .bilan-card p { font-size: 15px; color: var(--ink-soft); line-height: 1.6; }
+
+  .skills-cloud { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 28px; }
+  .skill-pill {
+    padding: 10px 20px; border-radius: 999px;
+    font-size: 14px; font-weight: 500;
+    background: var(--glass); border: 1px solid var(--glass-stroke);
+    backdrop-filter: blur(12px); color: var(--ink); transition: all 0.3s;
+  }
+  .skill-pill:hover { background: var(--coral); color: white; border-color: var(--coral); transform: translateY(-2px); }
+
+  footer {
+    position: relative; z-index: 1;
+    border-top: 1px solid var(--line);
+    padding: 48px clamp(20px, 5vw, 60px);
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 16px;
+  }
+  footer p { font-family: 'Geist Mono', monospace; font-size: 12px; letter-spacing: 0.06em; color: var(--muted); }
+  footer a { color: var(--coral); text-decoration: none; }
+
+  /* Lightbox */
+  .lb {
+    display: none; position: fixed; inset: 0; z-index: 9000;
+    background: rgba(31,28,22,0.92); backdrop-filter: blur(12px);
+    align-items: center; justify-content: center; padding: 32px;
+  }
+  .lb.open { display: flex; }
+  .lb-inner { position: relative; max-width: 1100px; width: 100%; }
+  .lb img {
+    max-width: 100%; max-height: 80vh;
+    border-radius: 16px; display: block; margin: 0 auto;
+    box-shadow: 0 40px 100px rgba(0,0,0,0.5);
+  }
+  .lb-caption {
+    text-align: center; margin-top: 16px;
+    font-family: 'Geist Mono', monospace; font-size: 13px;
+    color: rgba(239,231,218,0.7); letter-spacing: 0.06em;
+  }
+  .lb-close {
+    position: fixed; top: 24px; right: 28px;
+    font-family: 'Geist Mono', monospace; font-size: 13px;
+    color: rgba(239,231,218,0.6); cursor: pointer; letter-spacing: 0.1em;
+    background: none; border: none; transition: color 0.2s;
+  }
+  .lb-close:hover { color: var(--peach); }
+  .lb-arrow {
+    position: fixed; top: 50%; transform: translateY(-50%);
+    background: rgba(239,231,218,0.1); border: 1px solid rgba(239,231,218,0.2);
+    color: rgba(239,231,218,0.7); cursor: pointer;
+    width: 48px; height: 48px; border-radius: 50%;
+    font-size: 20px; display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s; backdrop-filter: blur(8px);
+  }
+  .lb-arrow:hover { background: rgba(239,231,218,0.2); color: white; }
+  .lb-prev { left: 20px; }
+  .lb-next { right: 20px; }
+</style>
+</head>
+<body>
+
+<div class="bg-stage" aria-hidden="true">
+  <svg class="bg-a" viewBox="0 0 400 400"><ellipse cx="200" cy="200" rx="200" ry="180" fill="currentColor"/></svg>
+  <svg class="bg-b" viewBox="0 0 400 400"><ellipse cx="200" cy="180" rx="180" ry="200" fill="currentColor"/></svg>
+  <svg class="bg-c" viewBox="0 0 400 400"><ellipse cx="200" cy="200" rx="220" ry="160" fill="currentColor"/></svg>
+  <svg class="bg-d" viewBox="0 0 400 400"><ellipse cx="180" cy="200" rx="200" ry="200" fill="currentColor"/></svg>
+  <svg class="bg-e" viewBox="0 0 400 400"><ellipse cx="200" cy="200" rx="160" ry="200" fill="currentColor"/></svg>
+</div>
+<div class="grain" aria-hidden="true"></div>
+
+<header class="topbar">
+  <div class="mark">Kaël Vitelius</div>
+  <a href="index.html">← Retour au portfolio</a>
+</header>
+
+<nav class="section-nav">
+  <a href="#contexte">Contexte</a>
+  <a href="#topologie">Topologie</a>
+  <a href="#cisco3750">Cisco 3750</a>
+  <a href="#cisco2960">Cisco 2960</a>
+  <a href="#tests">Tests</a>
+  <a href="#bilan">Bilan</a>
+</nav>
+
+<div class="page-wrap">
+
+  <!-- Hero -->
+  <section id="hero">
+    <div class="eyebrow">E6 · Mission 3 · CFA CCI Martinique</div>
+    <h1>Commutation &amp; <span class="italic">Routage</span> inter-VLAN</h1>
+    <p class="sub">Configuration d'une infrastructure de commutation multi-VLAN sur Cisco 3750 et 2960 avec routage inter-VLAN par SVI et lien trunk 802.1Q — infrastructure M2L Ligues.</p>
+    <div class="hero-tags">
+      <span class="hero-tag">Cisco 3750 (L3)</span>
+      <span class="hero-tag">Cisco 2960 (L2)</span>
+      <span class="hero-tag">Cisco 2800</span>
+      <span class="hero-tag">VLANs 802.1Q</span>
+      <span class="hero-tag">Routage inter-VLAN</span>
+      <span class="hero-tag">NAT overload</span>
+      <span class="hero-tag">BTS SIO SISR · 2026</span>
+    </div>
+  </section>
+
+  <!-- Contexte -->
+  <section id="contexte">
+    <div class="section-header">
+      <div class="eyebrow">Contexte &amp; problématique</div>
+      <h2>La <span class="italic">mission</span></h2>
+      <p>Mission réalisée seul le 13 avril 2026 au CFA CCI Martinique. L'objectif était de segmenter le réseau de la Maison des Ligues M2L en VLANs distincts par ligue sportive, d'assurer le routage inter-VLAN via un switch L3 Cisco 3750, et de configurer un lien trunk 802.1Q vers le switch de distribution Cisco 2960.</p>
+    </div>
+    <div class="context-grid">
+      <div class="ctx-card glass">
+        <h3>Matériel utilisé</h3>
+        <ul>
+          <li><strong>Cisco 3750</strong> — switch L3, routage inter-VLAN par SVI</li>
+          <li><strong>Cisco 2960</strong> — switch L2, distribution des ports</li>
+          <li><strong>Cisco 2800</strong> — routeur, NAT overload vers SP2</li>
+          <li><strong>PC Windows</strong> + MobaXterm (console série, 9600 bauds)</li>
+        </ul>
+      </div>
+      <div class="ctx-card glass">
+        <h3>Objectifs SP1</h3>
+        <ul>
+          <li>Créer les VLANs 31, 41, 51, 61 avec noms sur les deux switches</li>
+          <li>Configurer les interfaces SVI (passerelles) sur le 3750</li>
+          <li>Activer <code>ip routing</code> sur le 3750</li>
+          <li>Configurer le trunk 802.1Q entre 3750 et 2960</li>
+          <li>Valider le routage inter-VLAN par ping</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Topologie -->
+  <section id="topologie">
+    <div class="section-header">
+      <div class="eyebrow">Plan d'adressage</div>
+      <h2>Topologie <span class="italic">réseau</span></h2>
+      <p>Groupe X=1 — chaque ligue sportive dispose de son propre VLAN et sous-réseau /24. Le Cisco 3750 assure le routage entre VLANs via ses interfaces SVI.</p>
+    </div>
+    <div class="glass" style="padding: 8px;">
+      <table class="topo-table">
+        <thead>
+          <tr>
+            <th>Ligue</th>
+            <th>VLAN</th>
+            <th>Réseau</th>
+            <th>Passerelle (SVI 3750)</th>
+            <th>Ports 2960</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Badminton</td>
+            <td><span class="vlan-badge">31</span></td>
+            <td>192.168.31.0/24</td>
+            <td>192.168.31.254</td>
+            <td>Fa0/1 – Fa0/5</td>
+          </tr>
+          <tr>
+            <td>Escrime</td>
+            <td><span class="vlan-badge">41</span></td>
+            <td>192.168.41.0/24</td>
+            <td>192.168.41.254</td>
+            <td>Fa0/6 – Fa0/10</td>
+          </tr>
+          <tr>
+            <td>Volley</td>
+            <td><span class="vlan-badge">51</span></td>
+            <td>192.168.51.0/24</td>
+            <td>192.168.51.254</td>
+            <td>Fa0/11 – Fa0/15</td>
+          </tr>
+          <tr>
+            <td>Handball</td>
+            <td><span class="vlan-badge">61</span></td>
+            <td>192.168.61.0/24</td>
+            <td>192.168.61.254</td>
+            <td>Fa0/16 – Fa0/20</td>
+          </tr>
+          <tr>
+            <td>Admin / LAN</td>
+            <td>—</td>
+            <td>172.21.0.0/16</td>
+            <td>172.21.0.254 (Gi1/0/24)</td>
+            <td>—</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Cisco 3750 -->
+  <section id="cisco3750">
+    <div class="section-header">
+      <div class="eyebrow">Switch L3 — 7 captures</div>
+      <h2>Configuration <span class="italic">Cisco 3750</span></h2>
+      <p>Création des VLANs, interfaces SVI avec adresses de passerelle, activation du routage IP et configuration du port trunk Gi1/0/1 vers le Cisco 2960.</p>
+    </div>
+    <div class="fig-grid">
+
+      <div class="fig-card glass" onclick="openLB('img/r03/3750_00_debut_config.jpg','00 — Début de configuration des VLANs')">
+        <img src="img/r03/3750_00_debut_config.jpg" alt="Début config" loading="lazy">
+        <div class="fig-caption"><span class="fig-num">00</span>Début de configuration des VLANs</div>
+      </div>
+
+      <div class="fig-card glass" onclick="openLB('img/r03/3750_01_vlans_config.jpg','01 — VLANs 31/41/51/61 + interfaces SVI configurées')">
+        <img src="img/r03/3750_01_vlans_config.jpg" alt="VLANs config" loading="lazy">
+        <div class="fig-caption"><span class="fig-num">01</span>VLANs + interfaces SVI configurées</div>
+      </div>
+
+      <div class="fig-card glass" onclick="openLB('img/r03/3750_02_ip_routing.jpg','02 — Activation de ip routing')">
+        <img src="img/r03/3750_02_ip_routing.jpg" alt="ip routing" loading="lazy">
+        <div class="fig-caption"><span class="fig-num">02</span>Activation de <code>ip routing</code></div>
+      </div>
+
+      <div class="fig-card glass" onclick="openLB('img/r03/3750_03_show_int_vlan31.jpg','03 — show interfaces vlan 31')">
+        <img src="img/r03/3750_03_show_int_vlan31.jpg" alt="show int vlan31" loading="lazy">
+        <div class="fig-caption"><span class="fig-num">03</span>show interfaces vlan 31</div>
+      </div>
+
+      <div class="fig-card glass" onclick="openLB('img/r03/3750_04_show_ip_route.jpg','04 — show ip route — 4 réseaux C connected')">
+        <img src="img/r03/3750_04_show_ip_route.jpg" alt="show ip route" loading="lazy">
+        <div class="fig-caption"><span class="fig-num">04</span>show ip route — 4 réseaux C connected</div>
+      </div>
+
+      <div class="fig-card glass" onclick="openLB('img/r03/3750_05_show_ip_int_brief.jpg','05 — show ip interface brief — Vlan31/41/51/61 up/up')">
+        <img src="img/r03/3750_05_show_ip_int_brief.jpg" alt="show ip int brief" loading="lazy">
+        <div class="fig-caption"><span class="fig-num">05</span>show ip int brief — Vlan31/41/51/61 up/up</div>
+      </div>
+
+      <div class="fig-card glass" onclick="openLB('img/r03/3750_06_show_interfaces_trunk.jpg','06 — show interfaces trunk — Gi1/0/1 trunking 802.1Q')">
+        <img src="img/r03/3750_06_show_interfaces_trunk.jpg" alt="show interfaces trunk" loading="lazy">
+        <div class="fig-caption"><span class="fig-num">06</span>show interfaces trunk — Gi1/0/1 dot1q</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Cisco 2960 -->
+  <section id="cisco2960">
+    <div class="section-header">
+      <div class="eyebrow">Switch L2 — 1 capture</div>
+      <h2>Configuration <span class="italic">Cisco 2960</span></h2>
+      <p>Les VLANs 31, 41, 51 et 61 sont créés sur le 2960 avec leurs noms, les ports access assignés par ligue, et le port Gi0/1 configuré en trunk vers le 3750.</p>
+    </div>
+    <div class="fig-grid" style="max-width: 500px;">
+      <div class="fig-card glass tall" onclick="openLB('img/r03/2960_07_show_vlan_brief.png','07 — show vlan brief — ports assignés par VLAN')">
+        <img src="img/r03/2960_07_show_vlan_brief.png" alt="show vlan brief" loading="lazy">
+        <div class="fig-caption"><span class="fig-num">07</span>show vlan brief — ports assignés par VLAN</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tests -->
+  <section id="tests">
+    <div class="section-header">
+      <div class="eyebrow">Validation — 4 captures</div>
+      <h2>Tests &amp; <span class="italic">résultats</span></h2>
+      <p>Validation du routage inter-VLAN par pings croisés entre ligues, et vérification de la table de routage et des interfaces sur le 3750.</p>
+    </div>
+    <div class="fig-grid two-col">
+
+      <div class="fig-card glass" onclick="openLB('img/r03/ping_08_inter_vlan.jpg','08 — Ping inter-VLAN 192.168.31.254 → 192.168.41.254 réussi')">
+        <img src="img/r03/ping_08_inter_vlan.jpg" alt="Ping inter-VLAN" loading="lazy">
+        <div class="fig-caption"><span class="fig-num">08</span>Ping inter-VLAN VLAN31 → VLAN41 réussi</div>
+      </div>
+
+      <div class="fig-card glass" onclick="openLB('img/r03/ping_09_inter_vlan_reel.png','09 — Ping inter-VLAN réel depuis poste client')">
+        <img src="img/r03/ping_09_inter_vlan_reel.png" alt="Ping reel" loading="lazy">
+        <div class="fig-caption"><span class="fig-num">09</span>Ping inter-VLAN réel depuis poste client</div>
+      </div>
+
+      <div class="fig-card glass" onclick="openLB('img/r03/3750__show_ip_route.png','show ip route — table de routage complète 3750')">
+        <img src="img/r03/3750__show_ip_route.png" alt="show ip route final" loading="lazy">
+        <div class="fig-caption"><span class="fig-num">10</span>show ip route — table de routage complète</div>
+      </div>
+
+      <div class="fig-card glass" onclick="openLB('img/r03/3750-show ip int brief.png','show ip interface brief — état final des interfaces')">
+        <img src="img/r03/3750-show ip int brief.png" alt="show ip int brief final" loading="lazy">
+        <div class="fig-caption"><span class="fig-num">11</span>show ip int brief — état final des interfaces</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Bilan -->
+  <section id="bilan">
+    <div class="section-header">
+      <div class="eyebrow">Bilan de mission</div>
+      <h2>Ce que j'ai <span class="italic">appris</span></h2>
+    </div>
+    <div class="bilan-grid">
+      <div class="bilan-card glass">
+        <div class="bilan-icon">🔀</div>
+        <h3>Commutation VLAN</h3>
+        <p>Création et assignation de VLANs sur switches L2 et L3, configuration des ports access et trunk 802.1Q.</p>
+      </div>
+      <div class="bilan-card glass">
+        <div class="bilan-icon">🌐</div>
+        <h3>Routage inter-VLAN</h3>
+        <p>Configuration des SVI (Switch Virtual Interfaces) comme passerelles de chaque VLAN et activation de <code>ip routing</code> sur le 3750.</p>
+      </div>
+      <div class="bilan-card glass">
+        <div class="bilan-icon">📡</div>
+        <h3>NAT &amp; accès WAN</h3>
+        <p>Configuration du Cisco 2800 avec NAT overload, ACL de traduction et routes statiques retour pour l'accès Internet des VLANs.</p>
+      </div>
+    </div>
+    <div class="skills-cloud">
+      <span class="skill-pill">Cisco IOS</span>
+      <span class="skill-pill">VLANs 802.1Q</span>
+      <span class="skill-pill">Trunk / Access</span>
+      <span class="skill-pill">SVI (Switch Virtual Interface)</span>
+      <span class="skill-pill">ip routing</span>
+      <span class="skill-pill">NAT overload</span>
+      <span class="skill-pill">show ip route</span>
+      <span class="skill-pill">MobaXterm (console série)</span>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <p>VITELIUS Kaël — N° 02542578159 · BTS SIO SISR · Session 2026</p>
+  <p><a href="index.html">← Retour au portfolio</a></p>
+</footer>
+
+<!-- Lightbox -->
+<div class="lb" id="lb" role="dialog" aria-modal="true">
+  <button class="lb-close" onclick="closeLB()">ESC / FERMER</button>
+  <button class="lb-arrow lb-prev" onclick="navLB(-1)">‹</button>
+  <button class="lb-arrow lb-next" onclick="navLB(1)">›</button>
+  <div class="lb-inner">
+    <img id="lb-img" src="" alt="">
+    <p class="lb-caption" id="lb-cap"></p>
+  </div>
+</div>
+
+<script>
+  // Section nav active
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('.section-nav a');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        navLinks.forEach(l => l.classList.remove('active'));
+        const a = document.querySelector(`.section-nav a[href="#${e.target.id}"]`);
+        if (a) a.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -60% 0px' });
+  sections.forEach(s => observer.observe(s));
+
+  // Lightbox
+  const allFigs = [];
+  document.querySelectorAll('.fig-card').forEach(card => {
+    const m = card.getAttribute('onclick').match(/openLB\('(.+?)','(.+?)'\)/);
+    if (m) allFigs.push({ src: m[1], cap: m[2] });
+  });
+
+  let currentIdx = 0;
+
+  function openLB(src, cap) {
+    currentIdx = allFigs.findIndex(f => f.src === src);
+    _showLB(src, cap);
+  }
+  function _showLB(src, cap) {
+    document.getElementById('lb-img').src = src;
+    document.getElementById('lb-cap').textContent = cap;
+    document.getElementById('lb').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeLB() {
+    document.getElementById('lb').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  function navLB(dir) {
+    currentIdx = (currentIdx + dir + allFigs.length) % allFigs.length;
+    const f = allFigs[currentIdx];
+    _showLB(f.src, f.cap);
+  }
+  document.getElementById('lb').addEventListener('click', e => { if (e.target === document.getElementById('lb')) closeLB(); });
+  document.addEventListener('keydown', e => {
+    if (!document.getElementById('lb').classList.contains('open')) return;
+    if (e.key === 'Escape') closeLB();
+    if (e.key === 'ArrowLeft') navLB(-1);
+    if (e.key === 'ArrowRight') navLB(1);
+  });
+</script>
+
+</body>
+</html>
